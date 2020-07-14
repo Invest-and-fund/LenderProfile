@@ -34,7 +34,15 @@ Public Class Form1
 
     Public Class Deployed2
         Property Amount As Integer
+        Property Balance As Integer
         Property Month As String
+
+    End Class
+
+    Public Class LoanMaturity
+        Property Amount As Integer
+        Property Balance As Integer
+        Property Quarter As String
 
     End Class
 
@@ -103,6 +111,7 @@ Public Class Form1
         If accfound = 1 Then
             LoanBook(iaccid)
             AmountDeployed(iaccid)
+            Maturity(iaccid)
         End If
 
 
@@ -332,45 +341,13 @@ Public Class Form1
     End Sub
 
     Public Sub AmountDeployed(iaccid As Integer)
-        Dim MySQL, strConn, sHTML, bHTML, sUsers As String
-        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
-        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
-        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
-        Dim connection As String = "FBConnectionString"
-        Dim dr1, dr2, dr3 As DataRow
+
+
 
         Dim values_list As New List(Of Integer)
 
-        Dim colours() As Color = {Color.Blue, Color.Green,
-            Color.Cyan, Color.Red, Color.Magenta, Color.Yellow,
-            Color.White, Color.Gray, Color.LightBlue,
-            Color.LightCyan, Color.LightGreen, Color.Pink,
-            Color.Maroon, Color.LightYellow, Color.SkyBlue,
-            Color.AliceBlue, Color.Black, Color.Beige,
-            Color.BlueViolet, Color.Azure, Color.CadetBlue,
-            Color.Chocolate, Color.CornflowerBlue,
-            Color.Cornsilk, Color.Crimson, Color.Coral, Color.DarkBlue,
-            Color.DarkCyan, Color.DarkGreen, Color.DarkOrange,
-            Color.DarkRed, Color.DarkSalmon, Color.DeepPink,
-            Color.DodgerBlue, Color.FloralWhite, Color.ForestGreen,
-            Color.Fuchsia, Color.Gold, Color.Honeydew,
-            Color.IndianRed, Color.Khaki, Color.LavenderBlush,
-            Color.LemonChiffon, Color.LightPink, Color.Lime,
-            Color.Magenta, Color.MediumAquamarine, Color.Maroon,
-            Color.MediumOrchid, Color.MintCream, Color.MediumTurquoise,
-            Color.MistyRose, Color.Moccasin, Color.Olive,
-            Color.PaleGoldenrod, Color.PaleVioletRed, Color.Peru,
-            Color.SeaShell, Color.Silver, Color.SpringGreen}
 
 
-
-        Dim v As Integer = 0
-        Dim w As Integer = 0
-        Dim x As Integer = 0
-
-
-        Dim rtotal As Decimal = 0
-        Dim rtotal2 As Integer
 
 
 
@@ -379,7 +356,7 @@ Public Class Form1
         Dim DeployedDate = New DateTime(Now.Year - 1, Now.Month, 1, 0, 0, 0)
         Dim PrevDeployed As Integer = 0
 
-        For v = 0 To 11
+        For v = 0 To 12
 
             getDeployedData(iaccid, v, DeployedList, PrevDeployed, DeployedList2)
 
@@ -388,24 +365,9 @@ Public Class Form1
 
         Next
 
-
-
-
-
-
-
-
-
-
-
-
-
         Dim d = DeployedList2.Count - 1
 
-
-
         DoLineChart(d, DeployedList2)
-
 
         DataGridView2.DataSource = DeployedList
 
@@ -425,21 +387,25 @@ Public Class Form1
     Public Sub DoLineChart(ByVal d As Integer, DeployedList2 As List(Of Deployed2))
 
         Chart1.Series.Clear()
-        Chart1.Titles.Add("Demo")
+        Chart1.Titles.Clear()
+        'Chart1.Titles.Add("Demo")
         'Create a new series and add data points to it.
 
-        Dim s As New Series
+        Dim s, s2 As New Series
 
-        s.Name = "aline"
+        s.Name = "Deployed"
+        s2.Name = "Balance"
 
         'Change to a line graph.
 
         s.ChartType = SeriesChartType.Line
+        s2.ChartType = SeriesChartType.Line
 
 
 
         For d = 0 To d - 1
             s.Points.AddXY(DeployedList2(d).Month, DeployedList2(d).Amount)
+            s2.Points.AddXY(DeployedList2(d).Month, DeployedList2(d).Balance)
         Next
 
 
@@ -447,6 +413,8 @@ Public Class Form1
         'Add the series to the Chart1 control.
 
         Chart1.Series.Add(s)
+        Chart1.Series.Add(s2)
+
 
 
 
@@ -593,16 +561,253 @@ Public Class Form1
         Adaptor.Fill(dsBalance)
         MyConn.Close()
 
-
-
         dr2 = dsBalance.Tables(0).Rows(0)
-        newDeployed.AccountBalance = dr2("TheAmount")
+        If Not IsDBNull(dr2("TheAmount")) Then
+            newDeployed.AccountBalance = dr2("TheAmount")
+        Else
+            newDeployed.AccountBalance = 0
+        End If
+
         newDeployed.AccountBalance += newDeployed.DeployedAmount
-
-
+        newDeployed2.Balance = newDeployed.AccountBalance
 
         DeployedList.Add(newDeployed)
         DeployedList2.Add(newDeployed2)
+
+
+
+    End Sub
+
+    Public Sub Maturity(iaccid As Integer)
+        'get loan holding position prior to iteration of future maturity
+        Dim MySQL, strConn As String
+        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
+        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
+        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
+        Dim connection As String = "FBConnectionString"
+        Dim dr1, dr2, dr3 As DataRow
+
+        'Dim DeployedList As New List(Of Deployed)
+        Dim DeployedDate = New Date(Now.Year - 1, Now.Month, 1, 0, 0, 0)
+
+
+
+
+
+        'retrieve all loan holdings for the lender
+        strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
+        MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
+        MyConn.Open()
+        MySQL = "select  sum (num_units) as TheAmount  from
+            (
+            select sum(num_units) as num_units, dd_lastdate, loanid
+            from
+            (
+            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            from loans l, loan_holdings h, lh_balances b
+            where l.loanid = h.loanid
+            and h.loan_holdings_id = b.lh_id
+            and b.accountid = @accid
+            
+
+            union
+
+            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            from loans l, loan_holdings h, lh_balances_suspense b
+            where l.loanid = h.loanid
+            and h.loan_holdings_id = b.lh_id
+            and b.accountid = @accid
+                  ) v
+            group by  loanid, dd_lastdate
+            order by  dd_lastdate, loanid
+            )"
+
+
+        dsMaturity = New DataSet
+        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
+
+        Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
+        Adaptor.Fill(dsMaturity)
+        MyConn.Close()
+
+
+
+        Dim newLoanMaturity As New LoanMaturity
+
+
+        Dim PrevMatured As Integer = 0
+        dr2 = dsMaturity.Tables(0).Rows(0)
+        If Not IsDBNull(dr2("TheAmount")) Then
+            PrevMatured = dr2("TheAmount")
+        Else
+            PrevMatured = 0
+        End If
+
+
+
+
+
+
+
+        Dim values_list As New List(Of Integer)
+
+        Dim LoanMaturityList As New List(Of LoanMaturity)
+
+        Dim MaturityDate As New DateTime
+        MaturityDate = DateTime.Now
+
+
+        Dim QuaterStartDate = New Date(Now.Year - 1, Now.Month, 1, 0, 0, 0)
+        Select Case QuaterStartDate.Month
+            Case 1, 2, 3
+                QuaterStartDate = New Date(QuaterStartDate.Year, 1, 1, 0, 0, 0)
+            Case 4, 5, 6
+                QuaterStartDate = New Date(QuaterStartDate.Year, 4, 1, 0, 0, 0)
+            Case 7, 8, 9
+                QuaterStartDate = New Date(QuaterStartDate.Year, 7, 1, 0, 0, 0)
+            Case 10, 11, 12
+                QuaterStartDate = New Date(QuaterStartDate.Year, 10, 1, 0, 0, 0)
+        End Select
+
+        QuaterStartDate = QuaterStartDate.AddDays(-1)
+        Dim QuaterEndDate = QuaterStartDate.AddMonths(3)
+
+        For i = 0 To 8
+            getMaturityData(iaccid, LoanMaturityList, PrevMatured, QuaterStartDate, QuaterEndDate)
+        Next
+
+
+
+
+
+        Dim d = LoanMaturityList.Count - 1
+
+        DoLineChart2(d, LoanMaturityList)
+
+        DataGridView3.DataSource = LoanMaturityList
+
+        DataGridView3.Columns.Item(0).Width = 100
+        DataGridView3.Columns.Item(1).Width = 115
+        DataGridView3.Columns.Item(1).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+        DataGridView3.Columns.Item(2).Width = 115
+        DataGridView3.Columns.Item(2).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+
+
+    End Sub
+
+    Public Sub getMaturityData(iaccid As Integer, ByRef LoanMaturityList As List(Of LoanMaturity), ByRef PrevMatured As Integer, ByRef QuaterStartDate As Date, ByRef QuaterEndDate As Date)
+
+        Dim MySQL, strConn As String
+        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
+        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
+        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
+        Dim connection As String = "FBConnectionString"
+        Dim dr1, dr2, dr3 As DataRow
+
+        'Dim DeployedList As New List(Of Deployed)
+        Dim DeployedDate = New Date(Now.Year - 1, Now.Month, 1, 0, 0, 0)
+
+
+
+
+
+        'retrieve all loan holdings for the lender
+        strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
+        MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
+        MyConn.Open()
+        MySQL = "select  sum (num_units) as TheAmount  from
+            (
+            select sum(num_units) as num_units, dd_lastdate, loanid
+            from
+            (
+            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            from loans l, loan_holdings h, lh_balances b
+            where l.loanid = h.loanid
+            and h.loan_holdings_id = b.lh_id
+            and b.accountid = @accid
+            and l.dd_lastdate < @enddate
+            and l.dd_lastdate > @startdate 
+
+            union
+
+            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            from loans l, loan_holdings h, lh_balances_suspense b
+            where l.loanid = h.loanid
+            and h.loan_holdings_id = b.lh_id
+            and b.accountid = @accid
+            and l.dd_lastdate < @enddate
+            and l.dd_lastdate > @startdate       ) v
+            group by  loanid, dd_lastdate
+            order by  dd_lastdate, loanid
+            )"
+
+
+        dsMaturity = New DataSet
+        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
+        Adaptor.SelectCommand.Parameters.Add("@StartDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = QuaterStartDate
+        Adaptor.SelectCommand.Parameters.Add("EndDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = QuaterEndDate
+        Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
+        Adaptor.Fill(dsMaturity)
+        MyConn.Close()
+
+
+
+        Dim newLoanMaturity As New LoanMaturity
+
+
+
+        dr2 = dsMaturity.Tables(0).Rows(0)
+        If Not IsDBNull(dr2("TheAmount")) Then
+            newLoanMaturity.Amount = dr2("TheAmount")
+        Else
+            newLoanMaturity.Amount = 0
+        End If
+
+        newLoanMaturity.Balance = PrevMatured - newLoanMaturity.Amount
+        newLoanMaturity.Quarter = QuaterEndDate.Month & "/" & QuaterEndDate.Year
+
+        PrevMatured = newLoanMaturity.Balance
+
+        LoanMaturityList.Add(newLoanMaturity)
+
+        QuaterStartDate = QuaterEndDate.AddDays(-1)
+        QuaterEndDate = QuaterStartDate.AddMonths(3)
+
+
+
+    End Sub
+
+    Public Sub DoLineChart2(ByVal d As Integer, LoanMaturityList As List(Of LoanMaturity))
+
+        Chart2.Series.Clear()
+        Chart2.Titles.Clear()
+        'Chart2.Titles.Add("Demo")
+        'Create a new series and add data points to it.
+
+        Dim s, s2 As New Series
+
+        s.Name = "Deployed"
+        s2.Name = "Repayment"
+
+        'Change to a line graph.
+
+        s.ChartType = SeriesChartType.Line
+        s2.ChartType = SeriesChartType.Column
+
+
+
+        For d = 0 To d - 1
+            s.Points.AddXY(LoanMaturityList(d).Quarter, LoanMaturityList(d).Balance)
+            s2.Points.AddXY(LoanMaturityList(d).Quarter, LoanMaturityList(d).Amount)
+        Next
+
+
+
+        'Add the series to the Chart1 control.
+
+        Chart2.Series.Add(s)
+        Chart2.Series.Add(s2)
+
 
 
 
