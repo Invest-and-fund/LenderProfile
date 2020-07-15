@@ -96,13 +96,13 @@ Partial Class Form1
         Me.DataGridView2.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.DataGridView2.Location = New System.Drawing.Point(16, 345)
         Me.DataGridView2.Name = "DataGridView2"
-        Me.DataGridView2.Size = New System.Drawing.Size(501, 289)
+        Me.DataGridView2.Size = New System.Drawing.Size(501, 319)
         Me.DataGridView2.TabIndex = 5
         '
         'DataGridView3
         '
         Me.DataGridView3.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        Me.DataGridView3.Location = New System.Drawing.Point(16, 653)
+        Me.DataGridView3.Location = New System.Drawing.Point(16, 683)
         Me.DataGridView3.Name = "DataGridView3"
         Me.DataGridView3.Size = New System.Drawing.Size(501, 297)
         Me.DataGridView3.TabIndex = 6
@@ -119,7 +119,7 @@ Partial Class Form1
         'Label5
         '
         Me.Label5.AutoSize = True
-        Me.Label5.Location = New System.Drawing.Point(30, 637)
+        Me.Label5.Location = New System.Drawing.Point(30, 667)
         Me.Label5.Name = "Label5"
         Me.Label5.Size = New System.Drawing.Size(76, 13)
         Me.Label5.TabIndex = 8
@@ -154,7 +154,7 @@ Partial Class Form1
         Series2.Name = "Balance"
         Me.Chart1.Series.Add(Series1)
         Me.Chart1.Series.Add(Series2)
-        Me.Chart1.Size = New System.Drawing.Size(722, 289)
+        Me.Chart1.Size = New System.Drawing.Size(722, 319)
         Me.Chart1.TabIndex = 10
         Me.Chart1.Text = "Chart1"
         '
@@ -164,7 +164,7 @@ Partial Class Form1
         Me.Chart2.ChartAreas.Add(ChartArea2)
         Legend2.Name = "Legend1"
         Me.Chart2.Legends.Add(Legend2)
-        Me.Chart2.Location = New System.Drawing.Point(523, 653)
+        Me.Chart2.Location = New System.Drawing.Point(523, 683)
         Me.Chart2.Name = "Chart2"
         Series3.ChartArea = "ChartArea1"
         Series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line

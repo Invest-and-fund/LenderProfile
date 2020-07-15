@@ -63,6 +63,8 @@ Public Class Form1
 
 
 
+
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
     End Sub
@@ -214,7 +216,7 @@ Public Class Form1
             newExtract.LoanName = dr2("business_name")
             newExtract.LoanAmount = dr2("loanamount") / 100
             newExtract.MaturityDate = dr2("maturitydate")
-            newExtract.Yield = dr2("yield")
+            newExtract.Yield = Math.Round(dr2("yield") / 100, 2)
             newExtract.AcquiredDate = dr2("dateenteredinto")
             newExtract.TotalExposure = 0
             newExtract.MonthsToGo = 0
@@ -401,12 +403,22 @@ Public Class Form1
         s.ChartType = SeriesChartType.Line
         s2.ChartType = SeriesChartType.Line
 
-
+        Dim iHighest As Integer = 0
 
         For d = 0 To d - 1
             s.Points.AddXY(DeployedList2(d).Month, DeployedList2(d).Amount)
             s2.Points.AddXY(DeployedList2(d).Month, DeployedList2(d).Balance)
+            If iHighest < DeployedList2(d).Balance Then
+                iHighest = DeployedList2(d).Balance
+            End If
+            If iHighest < DeployedList2(d).Amount Then
+                iHighest = DeployedList2(d).Amount
+            End If
         Next
+
+        If iHighest = 0 Then
+            iHighest = 1000
+        End If
 
 
 
@@ -414,7 +426,9 @@ Public Class Form1
 
         Chart1.Series.Add(s)
         Chart1.Series.Add(s2)
-
+        Chart1.ChartAreas(0).AxisY.MaximumAutoSize = 100
+        Chart1.ChartAreas(0).AxisX.MaximumAutoSize = 100
+        'Chart1.ChartAreas(0).AxisY.Maximum = iHighest
 
 
 
@@ -493,21 +507,33 @@ Public Class Form1
         Dim newDeployed As New Deployed
         Dim newDeployed2 As New Deployed2
         dr2 = dsDeployed.Tables(0).Rows(0)
-        newDeployed.DeployedAmount = dr2("TheAmount")
+        If Not IsDBNull(dr2("TheAmount")) Then
+            newDeployed.DeployedAmount = dr2("TheAmount") / 100
+        Else
+            newDeployed.DeployedAmount = 0
+        End If
+
         newDeployed.DeployedDate = DeployedDate
 
-        newDeployed2.Amount = dr2("TheAmount")
+        If Not IsDBNull(dr2("TheAmount")) Then
+            newDeployed2.Amount = dr2("TheAmount") / 100
+        Else
+            newDeployed2.Amount = 0
+        End If
+
         newDeployed2.Month = DeployedDate.Month & "/" & DeployedDate.Year
 
+        Dim change As Decimal
         If PrevDeployed = 0 Then
 
 
-            newDeployed.Change = 0
+            Change = 0
 
         Else
-            Dim change As Decimal = (newDeployed.DeployedAmount - PrevDeployed) / PrevDeployed
-            newDeployed.Change = change
+            change = (newDeployed.DeployedAmount - PrevDeployed) / PrevDeployed
+
         End If
+        newDeployed.Change = Math.Round(change, 2)
         PrevDeployed = newDeployed.DeployedAmount
 
 
@@ -563,7 +589,7 @@ Public Class Form1
 
         dr2 = dsBalance.Tables(0).Rows(0)
         If Not IsDBNull(dr2("TheAmount")) Then
-            newDeployed.AccountBalance = dr2("TheAmount")
+            newDeployed.AccountBalance = dr2("TheAmount") / 100
         Else
             newDeployed.AccountBalance = 0
         End If
@@ -586,12 +612,6 @@ Public Class Form1
         Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
         Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
-
-        'Dim DeployedList As New List(Of Deployed)
-        Dim DeployedDate = New Date(Now.Year - 1, Now.Month, 1, 0, 0, 0)
-
-
-
 
 
         'retrieve all loan holdings for the lender
@@ -638,7 +658,7 @@ Public Class Form1
         Dim PrevMatured As Integer = 0
         dr2 = dsMaturity.Tables(0).Rows(0)
         If Not IsDBNull(dr2("TheAmount")) Then
-            PrevMatured = dr2("TheAmount")
+            PrevMatured = dr2("TheAmount") / 100
         Else
             PrevMatured = 0
         End If
@@ -657,7 +677,7 @@ Public Class Form1
         MaturityDate = DateTime.Now
 
 
-        Dim QuaterStartDate = New Date(Now.Year - 1, Now.Month, 1, 0, 0, 0)
+        Dim QuaterStartDate = New Date(Now.Year, Now.Month, 1, 0, 0, 0)
         Select Case QuaterStartDate.Month
             Case 1, 2, 3
                 QuaterStartDate = New Date(QuaterStartDate.Year, 1, 1, 0, 0, 0)
@@ -669,11 +689,11 @@ Public Class Form1
                 QuaterStartDate = New Date(QuaterStartDate.Year, 10, 1, 0, 0, 0)
         End Select
 
-        QuaterStartDate = QuaterStartDate.AddDays(-1)
+        QuaterStartDate = QuaterStartDate.AddDays(-1) 'takes it to the last date of the prev month.
         Dim QuaterEndDate = QuaterStartDate.AddMonths(3)
 
         For i = 0 To 8
-            getMaturityData(iaccid, LoanMaturityList, PrevMatured, QuaterStartDate, QuaterEndDate)
+            getMaturityData(iaccid, LoanMaturityList, PrevMatured, QuaterStartDate, QuaterEndDate, i)
         Next
 
 
@@ -687,6 +707,7 @@ Public Class Form1
         DataGridView3.DataSource = LoanMaturityList
 
         DataGridView3.Columns.Item(0).Width = 100
+        DataGridView3.Columns.Item(0).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
         DataGridView3.Columns.Item(1).Width = 115
         DataGridView3.Columns.Item(1).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
         DataGridView3.Columns.Item(2).Width = 115
@@ -695,7 +716,7 @@ Public Class Form1
 
     End Sub
 
-    Public Sub getMaturityData(iaccid As Integer, ByRef LoanMaturityList As List(Of LoanMaturity), ByRef PrevMatured As Integer, ByRef QuaterStartDate As Date, ByRef QuaterEndDate As Date)
+    Public Sub getMaturityData(iaccid As Integer, ByRef LoanMaturityList As List(Of LoanMaturity), ByRef PrevMatured As Integer, ByRef QuaterStartDate As Date, ByRef QuaterEndDate As Date, ByRef i As Integer)
 
         Dim MySQL, strConn As String
         Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
@@ -703,10 +724,15 @@ Public Class Form1
         Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
         Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
+        Dim TempQuaterStartDate = New Date
 
-        'Dim DeployedList As New List(Of Deployed)
-        Dim DeployedDate = New Date(Now.Year - 1, Now.Month, 1, 0, 0, 0)
 
+        'for the first quarter we only need to get repayments from current date forward - so overwrite the from date
+        If i = 0 Then
+            TempQuaterStartDate = New Date(Now.Year, Now.Month, Now.Day, 0, 0, 0)
+        Else
+            TempQuaterStartDate = QuaterStartDate
+        End If
 
 
 
@@ -744,7 +770,7 @@ Public Class Form1
 
         dsMaturity = New DataSet
         Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-        Adaptor.SelectCommand.Parameters.Add("@StartDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = QuaterStartDate
+        Adaptor.SelectCommand.Parameters.Add("@StartDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = TempQuaterStartDate
         Adaptor.SelectCommand.Parameters.Add("EndDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = QuaterEndDate
         Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
         Adaptor.Fill(dsMaturity)
@@ -758,7 +784,7 @@ Public Class Form1
 
         dr2 = dsMaturity.Tables(0).Rows(0)
         If Not IsDBNull(dr2("TheAmount")) Then
-            newLoanMaturity.Amount = dr2("TheAmount")
+            newLoanMaturity.Amount = dr2("TheAmount") / 100
         Else
             newLoanMaturity.Amount = 0
         End If
@@ -794,19 +820,33 @@ Public Class Form1
         s.ChartType = SeriesChartType.Line
         s2.ChartType = SeriesChartType.Column
 
-
+        Dim iHighest As Integer = 0
 
         For d = 0 To d - 1
             s.Points.AddXY(LoanMaturityList(d).Quarter, LoanMaturityList(d).Balance)
             s2.Points.AddXY(LoanMaturityList(d).Quarter, LoanMaturityList(d).Amount)
+            If iHighest < LoanMaturityList(d).Balance Then
+                iHighest = LoanMaturityList(d).Balance
+            End If
+            If iHighest < LoanMaturityList(d).Amount Then
+                iHighest = LoanMaturityList(d).Amount
+            End If
         Next
 
-
+        If iHighest = 0 Then
+            iHighest = 1000
+        End If
 
         'Add the series to the Chart1 control.
 
         Chart2.Series.Add(s)
         Chart2.Series.Add(s2)
+        Chart2.ChartAreas(0).AxisY.MaximumAutoSize = 100
+        Chart2.ChartAreas(0).AxisX.MaximumAutoSize = 100
+
+        'Chart2.ChartAreas(0).AxisY.Maximum = iHighest
+        'Chart2.ChartAreas(0).AxisX.Minimum = Double.NaN
+
 
 
 
