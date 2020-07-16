@@ -52,6 +52,7 @@ Public Class Form1
     Public dsBalance As DataSet
     Public dsDeployed As DataSet
     Public dsMaturity As DataSet
+    Public dsBals As DataSet
     Private picChart As Object
 
 
@@ -128,6 +129,7 @@ Public Class Form1
         Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
         Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
+        Dim dToday = New DateTime(Now.Year - 1, Now.Month, Now.Day, 0, 0, 0)
 
         Dim values_list As New List(Of Integer)
 
@@ -157,9 +159,18 @@ Public Class Form1
         Dim v As Integer = 0
         Dim w As Integer = 0
         Dim x As Integer = 0
+        Dim iloansetid As Integer = 0
+        Dim nloansetid As Integer = 0
+        Dim iwrite As Integer = 0
+        Dim iloanamount As Integer
+        Dim dacquireddate As Date = DateTime.Now.AddYears(10)
+        Dim dmaturesdate As Date = DateTime.Now.AddYears(10)
+        Dim imonthstogototal As Integer = 0
+        Dim iyieldtotal As Decimal = 0
+        Dim irecordscount As Integer = 0
 
 
-        Dim rtotal As Decimal = 0
+        Dim rtotal As Integer = 0
         Dim rtotal2 As Integer
 
 
@@ -168,11 +179,12 @@ Public Class Form1
         strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
         MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
         MyConn.Open()
-        MySQL = "select loanid, business_name ,sum(amount) as loanamount, dd_lastdate as maturitydate, fixed_rate as yield, dd_date as dateenteredinto
+        MySQL = "select loanid,  businessname ,amount as loanamount, dd_lastdate as maturitydate, fixed_rate as yield,
+                 dd_date as dateenteredinto, loansetid,  loanname
             from
             (
-            select distinct l.loanid, l.business_name , sum(b.num_units) as amount, l.dd_lastdate, l.fixed_rate, l.dd_date
-            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances b
+            select distinct l.loanid, l.business_name as businessname , sum(b.num_units) as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name as loanname
+            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances b, loan_sets s
             where u.userid = a.userid
             and u.usertype = 0
             and a.accountid = o.accountid
@@ -180,14 +192,17 @@ Public Class Form1
             and l.loanid = h.loanid
             and b.lh_id = h.loan_holdings_id
             and b.accountid = a.accountid
+            and l.loansetid = s.loansetid
+            and l.loanstatus in (2, 7)
  
             and a.accountid = " & iaccid &
-            " group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date
+            " group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name
 
               union all
 
-            select distinct l.loanid, l.business_name , sum(b.num_units) as amount, l.dd_lastdate, l.fixed_rate, l.dd_date
-            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances_suspense b
+            select distinct l.loanid, l.business_name as businessname , sum(b.num_units) as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name as loanname
+
+            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances_suspense b, loan_sets s
             where u.userid = a.userid
             and u.usertype = 0
             and a.accountid = o.accountid
@@ -195,12 +210,14 @@ Public Class Form1
             and l.loanid = h.loanid
             and b.lh_id = h.loan_holdings_id
             and b.accountid = a.accountid
+            and l.loansetid = s.loansetid
+            and l.loanstatus in (2, 7)
   
             and a.accountid = " & iaccid &
-            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date
+            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name
             ) results
-            group by loanid, business_name, maturitydate, yield, dateenteredinto
-            order by  business_name, loanid, maturitydate, yield, dateenteredinto"
+            
+            order by  loansetid, dateenteredinto, maturitydate, loanid, loanname, businessname, yield"
 
 
         dsLoans = New DataSet
@@ -213,21 +230,87 @@ Public Class Form1
             Dim newExtract As New Extract
             dr2 = dsLoans.Tables(0).Rows(i)
             newExtract.LoanID = dr2("loanid")
-            newExtract.LoanName = dr2("business_name")
-            newExtract.LoanAmount = dr2("loanamount") / 100
-            newExtract.MaturityDate = dr2("maturitydate")
+            newExtract.LoanName = dr2("loanname")
+            'newExtract.LoanAmount = dr2("loanamount") / 100
+            'newExtract.MaturityDate = dr2("maturitydate")
             newExtract.Yield = Math.Round(dr2("yield") / 100, 2)
-            newExtract.AcquiredDate = dr2("dateenteredinto")
+            'newExtract.AcquiredDate = dr2("dateenteredinto")
             newExtract.TotalExposure = 0
             newExtract.MonthsToGo = 0
 
+            If Not IsDBNull(dr2("LoanSetID")) Then
+                iLoansetid = dr2("LoanSetID")
+            Else
+                iLoansetid = 0
+            End If
+
+            MyConn.Open()
+            MySQL = "select first 1 b.datecreated
+            from lh_bals b, loans l, loan_holdings h
+            where l.loanid = " & newExtract.LoanID &
+           "  and b.accountid = " & iaccid &
+           "  and b.lh_id = h.loan_holdings_id
+              and h.loanid = l.loanid"
+            dsBals = New DataSet
+            Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
+            Adaptor.Fill(dsBals)
+            MyConn.Close()
+            newExtract.AcquiredDate = dsBals.Tables(0).Rows(0)("datecreated")
+
+            iwrite = 0 ' set to write record unless find otherwise 
+            If i < iLoanCounter - 1 Then
+                dr3 = dsLoans.Tables(0).Rows(i + 1)
+                If Not IsDBNull(dr3("LoanSetID")) Then
+                    nloansetid = dr3("LoanSetID")
+                Else
+                    nloansetid = 0
+                End If
+                If iloansetid = nLoansetid And nLoansetid <> 0 Then
+                    'dont write this record -  just accumulate values
+                    iwrite = 1
+
+                End If
+            End If
+
+            iloanamount += dr2("loanamount")
+            If dacquireddate > dr2("dateenteredinto") Then
+                dacquireddate = dr2("dateenteredinto")
+            End If
+            If dmaturesdate > dr2("maturitydate") Then
+                dmaturesdate = dr2("maturitydate")
+            End If
 
 
-            If newExtract.LoanAmount > 0 Then
+
+
+            Dim TTF As New Decimal
+
+
+
+
+            Dim dloanamount As Integer = iloanamount / 100
+
+            If dloanamount > 0 And iwrite = 0 Then
+
+                newExtract.LoanAmount = iloanamount / 100
+                rtotal += dloanamount
+                values_list.Add(dr2("loanamount") / 100)
+                iloanamount = 0
+                newExtract.MaturityDate = dmaturesdate
+
+                dmaturesdate = DateTime.Now.AddYears(10) 'set date into furure to enable picking up correct dates
+                newExtract.AcquiredDate = dacquireddate
+                dacquireddate = DateTime.Now.AddYears(10) 'set date into furure to enable picking up correct dates
+                TTF = DateDiff(DateInterval.Month, Date.Now, newExtract.MaturityDate)
+                newExtract.MonthsToGo = Math.Round(TTF, 2)
+                imonthstogototal += newExtract.MonthsToGo
+                iyieldtotal += newExtract.Yield
+                irecordscount += 1
+
+
                 ExtractList.Add(newExtract)
 
-                values_list.Add(dr2("loanamount") / 100)
-                rtotal += dr2("loanamount") / 100
+
                 v += 1
                 x += 1
             End If
@@ -237,6 +320,14 @@ Public Class Form1
         If rtotal = 0 Then
             Exit Sub
         End If
+
+        imonthstogototal = Math.Round(imonthstogototal / irecordscount, 2)
+        tbMonthsAvg.Text = imonthstogototal
+        iyieldtotal = Math.Round(iyieldtotal / irecordscount, 2)
+        tbYieldAvg.Text = iyieldtotal
+
+
+        tbAmountTot.Text = rtotal
 
         'now we know how big to make the arrays we can make them here
         Dim values(values_list.Count) As Integer
@@ -357,16 +448,21 @@ Public Class Form1
         Dim DeployedList2 As New List(Of Deployed2)
         Dim DeployedDate = New DateTime(Now.Year - 1, Now.Month, 1, 0, 0, 0)
         Dim PrevDeployed As Integer = 0
+        Dim FirstDeployed As Integer = 0
+        Dim LastDeployed As Integer = 0
+        Dim change As Decimal = 0
 
         For v = 0 To 12
 
-            getDeployedData(iaccid, v, DeployedList, PrevDeployed, DeployedList2)
+            getDeployedData(iaccid, v, DeployedList, PrevDeployed, DeployedList2, FirstDeployed, LastDeployed)
 
 
 
 
         Next
-
+        change = (LastDeployed - FirstDeployed) / FirstDeployed
+        change = Math.Round(change, 2)
+        tbChangeTotl.Text = change
         Dim d = DeployedList2.Count - 1
 
         DoLineChart(d, DeployedList2)
@@ -395,8 +491,8 @@ Public Class Form1
 
         Dim s, s2 As New Series
 
-        s.Name = "Deployed"
-        s2.Name = "Balance"
+        s.Name = "Amount Lent"
+        s2.Name = "Total Account Value"
 
         'Change to a line graph.
 
@@ -437,7 +533,8 @@ Public Class Form1
 
 
 
-    Public Sub getDeployedData(iaccid As Integer, v As Integer, ByRef DeployedList As List(Of Deployed), ByRef PrevDeployed As Integer, ByRef DeployedList2 As List(Of Deployed2))
+    Public Sub getDeployedData(iaccid As Integer, v As Integer, ByRef DeployedList As List(Of Deployed), ByRef PrevDeployed As Integer, ByRef DeployedList2 As List(Of Deployed2),
+                               ByRef FirstDeployed As Integer, ByRef LastDeployed As Integer)
 
         Dim MySQL, strConn, sHTML, bHTML, sUsers As String
         Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
@@ -527,7 +624,7 @@ Public Class Form1
         If PrevDeployed = 0 Then
 
 
-            Change = 0
+            change = 0
 
         Else
             change = (newDeployed.DeployedAmount - PrevDeployed) / PrevDeployed
@@ -535,6 +632,10 @@ Public Class Form1
         End If
         newDeployed.Change = Math.Round(change, 2)
         PrevDeployed = newDeployed.DeployedAmount
+        If FirstDeployed = 0 Then
+            FirstDeployed = newDeployed.DeployedAmount
+        End If
+        LastDeployed = newDeployed.DeployedAmount
 
 
 
@@ -812,8 +913,8 @@ Public Class Form1
 
         Dim s, s2 As New Series
 
-        s.Name = "Deployed"
-        s2.Name = "Repayment"
+        s.Name = "Total Lent"
+        s2.Name = "End Date by Qtr"
 
         'Change to a line graph.
 
