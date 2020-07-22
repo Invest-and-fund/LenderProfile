@@ -53,6 +53,7 @@ Public Class Form1
     Public dsDeployed As DataSet
     Public dsMaturity As DataSet
     Public dsBals As DataSet
+    Public dsLoansets As DataSet
     Private picChart As Object
 
 
@@ -180,29 +181,24 @@ Public Class Form1
         MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
         MyConn.Open()
         MySQL = "select loanid,  businessname ,amount as loanamount, dd_lastdate as maturitydate, fixed_rate as yield,
-                 dd_date as dateenteredinto, loansetid,  loanname
+                 dd_date as dateenteredinto, loansetid
             from
             (
-            select distinct l.loanid, l.business_name as businessname , sum(b.num_units) as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name as loanname
-            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances b, loan_sets s
-            where u.userid = a.userid
+            select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid
+            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances b
+           where u.userid = a.userid
             and u.usertype = 0
             and a.accountid = o.accountid
             and o.lh_id = h.loan_holdings_id
             and l.loanid = h.loanid
             and b.lh_id = h.loan_holdings_id
             and b.accountid = a.accountid
-            and l.loansetid = s.loansetid
             and l.loanstatus in (2, 7)
- 
             and a.accountid = " & iaccid &
-            " group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name
-
+            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid , amount
               union all
-
-            select distinct l.loanid, l.business_name as businessname , sum(b.num_units) as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name as loanname
-
-            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances_suspense b, loan_sets s
+            select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid
+            from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances_suspense b
             where u.userid = a.userid
             and u.usertype = 0
             and a.accountid = o.accountid
@@ -210,14 +206,14 @@ Public Class Form1
             and l.loanid = h.loanid
             and b.lh_id = h.loan_holdings_id
             and b.accountid = a.accountid
-            and l.loansetid = s.loansetid
             and l.loanstatus in (2, 7)
-  
             and a.accountid = " & iaccid &
-            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, s.business_name
+            "   group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid   , amount
             ) results
-            
-            order by  loansetid, dateenteredinto, maturitydate, loanid, loanname, businessname, yield"
+             order by
+            loansetid, dateenteredinto, maturitydate, loanid,
+            businessname,
+            yield"
 
 
         dsLoans = New DataSet
@@ -230,7 +226,7 @@ Public Class Form1
             Dim newExtract As New Extract
             dr2 = dsLoans.Tables(0).Rows(i)
             newExtract.LoanID = dr2("loanid")
-            newExtract.LoanName = dr2("loanname")
+            newExtract.LoanName = dr2("businessname")
             'newExtract.LoanAmount = dr2("loanamount") / 100
             'newExtract.MaturityDate = dr2("maturitydate")
             newExtract.Yield = Math.Round(dr2("yield") / 100, 2)
@@ -257,6 +253,9 @@ Public Class Form1
             MyConn.Close()
             newExtract.AcquiredDate = dsBals.Tables(0).Rows(0)("datecreated")
 
+
+
+
             iwrite = 0 ' set to write record unless find otherwise 
             If i < iLoanCounter - 1 Then
                 dr3 = dsLoans.Tables(0).Rows(i + 1)
@@ -271,6 +270,7 @@ Public Class Form1
 
                 End If
             End If
+
 
             iloanamount += dr2("loanamount")
             If dacquireddate > dr2("dateenteredinto") Then
@@ -292,10 +292,16 @@ Public Class Form1
 
             If dloanamount > 0 And iwrite = 0 Then
 
-                newExtract.LoanAmount = iloanamount / 100
-                rtotal += dloanamount
-                values_list.Add(dr2("loanamount") / 100)
-                iloanamount = 0
+                If nloansetid > 0 Then
+                    MyConn.Open()
+                    MySQL = "select business_name from loan_sets where loansetid = " & nloansetid
+                    dsLoansets = New DataSet
+                    Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
+                    Adaptor.Fill(dsLoansets)
+                    MyConn.Close()
+                    newExtract.LoanName = dsLoansets.Tables(0).Rows(0)("business_name")
+                End If
+
                 newExtract.MaturityDate = dmaturesdate
 
                 dmaturesdate = DateTime.Now.AddYears(10) 'set date into furure to enable picking up correct dates
@@ -303,16 +309,25 @@ Public Class Form1
                 dacquireddate = DateTime.Now.AddYears(10) 'set date into furure to enable picking up correct dates
                 TTF = DateDiff(DateInterval.Month, Date.Now, newExtract.MaturityDate)
                 newExtract.MonthsToGo = Math.Round(TTF, 2)
-                imonthstogototal += newExtract.MonthsToGo
-                iyieldtotal += newExtract.Yield
-                irecordscount += 1
+
+                'If newExtract.MonthsToGo < 0 Then
+                'Else
+                newExtract.LoanAmount = iloanamount / 100
+                    rtotal += dloanamount
+                    values_list.Add(dr2("loanamount") / 100)
+                    iloanamount = 0
+                    imonthstogototal += newExtract.MonthsToGo
+                    iyieldtotal += newExtract.Yield
+                    irecordscount += 1
 
 
-                ExtractList.Add(newExtract)
+                    ExtractList.Add(newExtract)
 
 
-                v += 1
-                x += 1
+                    v += 1
+                    x += 1
+                'End If
+
             End If
 
         Next
@@ -522,6 +537,7 @@ Public Class Form1
 
         Chart1.Series.Add(s)
         Chart1.Series.Add(s2)
+        Chart1.ResetAutoValues()
         Chart1.ChartAreas(0).AxisY.MaximumAutoSize = 100
         Chart1.ChartAreas(0).AxisX.MaximumAutoSize = 100
         'Chart1.ChartAreas(0).AxisY.Maximum = iHighest
@@ -562,11 +578,14 @@ Public Class Form1
                   ( select vt.accountid, lh_id, max_lh_bals_id, t.num_units
                  from 
                   ( 
-                     select accountid, max(lh_bals_id) as max_lh_bals_id
-                     from lh_bals s
+                     select s.accountid, max(s.lh_bals_id) as max_lh_bals_id
+                     from lh_bals s, loan_holdings h, loans l
                       where lh_id > 0
+                      and s.lh_id = h.loan_holdings_id
+                      and h.loanid = l.loanid
+                      and l.loanstatus in (2, 7)
                        and s.datecreated < @DeployedDate 
-                   group by accountid, lh_id
+                   group by s.accountid, s.lh_id
                     ) vt
                 inner join lh_bals t on t.lh_bals_id = vt.max_lh_bals_id
                  where t.num_units > 0 ) 
@@ -581,11 +600,14 @@ Public Class Form1
             (select vt.accountid, lh_id, max_lh_bals_sus_id, t.num_units
                  from 
                   ( 
-                     select accountid, max(lh_bals_suspense_id) as max_lh_bals_sus_id
-                     from lh_bals_suspense s
+                     select s.accountid, max(s.lh_bals_suspense_id) as max_lh_bals_sus_id
+                     from lh_bals_suspense s, loan_holdings h, loans l
                       where lh_id > 0
+                      and s.lh_id = h.loan_holdings_id
+                      and h.loanid = l.loanid
+                      and l.loanstatus in (2, 7)
                        and s.datecreated < @DeployedDate 
-                   group by accountid, lh_id
+                   group by s.accountid, s.lh_id
                     ) vt
                 inner join lh_bals_suspense t on t.lh_bals_suspense_id = vt.max_lh_bals_sus_id
                  where t.num_units > 0 )   fb on fb.accountid = a.accountid
@@ -729,6 +751,7 @@ Public Class Form1
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
             and b.accountid = @accid
+            and l.loanstatus in (2, 7)
             
 
             union
@@ -738,6 +761,7 @@ Public Class Form1
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
             and b.accountid = @accid
+            and l.loanstatus in (2, 7)
                   ) v
             group by  loanid, dd_lastdate
             order by  dd_lastdate, loanid
@@ -942,6 +966,7 @@ Public Class Form1
 
         Chart2.Series.Add(s)
         Chart2.Series.Add(s2)
+        Chart2.ResetAutoValues()
         Chart2.ChartAreas(0).AxisY.MaximumAutoSize = 100
         Chart2.ChartAreas(0).AxisX.MaximumAutoSize = 100
 

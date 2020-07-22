@@ -104,7 +104,7 @@ Partial Class Form1
         Me.DataGridView2.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.DataGridView2.Location = New System.Drawing.Point(16, 371)
         Me.DataGridView2.Name = "DataGridView2"
-        Me.DataGridView2.Size = New System.Drawing.Size(435, 313)
+        Me.DataGridView2.Size = New System.Drawing.Size(435, 312)
         Me.DataGridView2.TabIndex = 5
         '
         'DataGridView3
@@ -112,13 +112,13 @@ Partial Class Form1
         Me.DataGridView3.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.DataGridView3.Location = New System.Drawing.Point(16, 731)
         Me.DataGridView3.Name = "DataGridView3"
-        Me.DataGridView3.Size = New System.Drawing.Size(381, 223)
+        Me.DataGridView3.Size = New System.Drawing.Size(376, 231)
         Me.DataGridView3.TabIndex = 6
         '
         'Label4
         '
         Me.Label4.AutoSize = True
-        Me.Label4.Location = New System.Drawing.Point(30, 339)
+        Me.Label4.Location = New System.Drawing.Point(30, 355)
         Me.Label4.Name = "Label4"
         Me.Label4.Size = New System.Drawing.Size(91, 13)
         Me.Label4.TabIndex = 7
@@ -127,7 +127,7 @@ Partial Class Form1
         'Label5
         '
         Me.Label5.AutoSize = True
-        Me.Label5.Location = New System.Drawing.Point(30, 689)
+        Me.Label5.Location = New System.Drawing.Point(30, 715)
         Me.Label5.Name = "Label5"
         Me.Label5.Size = New System.Drawing.Size(76, 13)
         Me.Label5.TabIndex = 8
@@ -227,7 +227,7 @@ Partial Class Form1
         '
         'tbAmountTot
         '
-        Me.tbAmountTot.Location = New System.Drawing.Point(595, 336)
+        Me.tbAmountTot.Location = New System.Drawing.Point(593, 336)
         Me.tbAmountTot.Name = "tbAmountTot"
         Me.tbAmountTot.Size = New System.Drawing.Size(100, 20)
         Me.tbAmountTot.TabIndex = 16
@@ -235,23 +235,23 @@ Partial Class Form1
         '
         'tbYieldAvg
         '
-        Me.tbYieldAvg.Location = New System.Drawing.Point(701, 336)
+        Me.tbYieldAvg.Location = New System.Drawing.Point(699, 336)
         Me.tbYieldAvg.Name = "tbYieldAvg"
-        Me.tbYieldAvg.Size = New System.Drawing.Size(51, 20)
+        Me.tbYieldAvg.Size = New System.Drawing.Size(42, 20)
         Me.tbYieldAvg.TabIndex = 17
         Me.tbYieldAvg.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
         'tbMonthsAvg
         '
-        Me.tbMonthsAvg.Location = New System.Drawing.Point(758, 336)
+        Me.tbMonthsAvg.Location = New System.Drawing.Point(747, 336)
         Me.tbMonthsAvg.Name = "tbMonthsAvg"
-        Me.tbMonthsAvg.Size = New System.Drawing.Size(57, 20)
+        Me.tbMonthsAvg.Size = New System.Drawing.Size(77, 20)
         Me.tbMonthsAvg.TabIndex = 18
         Me.tbMonthsAvg.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
         'tbChangeTotl
         '
-        Me.tbChangeTotl.Location = New System.Drawing.Point(458, 663)
+        Me.tbChangeTotl.Location = New System.Drawing.Point(401, 682)
         Me.tbChangeTotl.Name = "tbChangeTotl"
         Me.tbChangeTotl.Size = New System.Drawing.Size(50, 20)
         Me.tbChangeTotl.TabIndex = 19
