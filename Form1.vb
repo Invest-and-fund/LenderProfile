@@ -181,10 +181,10 @@ Public Class Form1
         MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
         MyConn.Open()
         MySQL = "select loanid,  businessname ,amount as loanamount, dd_lastdate as maturitydate, fixed_rate as yield,
-                 dd_date as dateenteredinto, loansetid
+                 dd_date as dateenteredinto, loansetid, loan_holdings_id
             from
             (
-            select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid
+            select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, h.loan_holdings_id
             from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances b
            where u.userid = a.userid
             and u.usertype = 0
@@ -195,9 +195,9 @@ Public Class Form1
             and b.accountid = a.accountid
             and l.loanstatus in (2, 7)
             and a.accountid = " & iaccid &
-            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid , amount
+            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid , amount, h.loan_holdings_id
               union all
-            select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid
+            select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, h.loan_holdings_id
             from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances_suspense b
             where u.userid = a.userid
             and u.usertype = 0
@@ -208,10 +208,10 @@ Public Class Form1
             and b.accountid = a.accountid
             and l.loanstatus in (2, 7)
             and a.accountid = " & iaccid &
-            "   group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid   , amount
+            "   group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid   , amount, h.loan_holdings_id
             ) results
              order by
-            loansetid, dateenteredinto, maturitydate, loanid,
+            loansetid, dateenteredinto, maturitydate, loanid,  loan_holdings_id,
             businessname,
             yield"
 
@@ -292,7 +292,7 @@ Public Class Form1
 
             If dloanamount > 0 And iwrite = 0 Then
 
-                If nloansetid > 0 Then
+                If iloansetid > 0 Then
                     MyConn.Open()
                     MySQL = "select business_name from loan_sets where loansetid = " & nloansetid
                     dsLoansets = New DataSet
@@ -743,10 +743,10 @@ Public Class Form1
         MyConn.Open()
         MySQL = "select  sum (num_units) as TheAmount  from
             (
-            select sum(num_units) as num_units, dd_lastdate, loanid
+            select sum(num_units) as num_units, dd_lastdate, loanid, loan_holdings_id
             from
             (
-            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            select  distinct b.num_units, l.dd_lastdate, l.loanid, h.loan_holdings_id
             from loans l, loan_holdings h, lh_balances b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
@@ -756,15 +756,15 @@ Public Class Form1
 
             union
 
-            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            select  distinct b.num_units, l.dd_lastdate, l.loanid, h.loan_holdings_id
             from loans l, loan_holdings h, lh_balances_suspense b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
             and b.accountid = @accid
             and l.loanstatus in (2, 7)
                   ) v
-            group by  loanid, dd_lastdate
-            order by  dd_lastdate, loanid
+            group by  loanid, loan_holdings_id, dd_lastdate
+            order by  dd_lastdate, loanid, loan_holdings_id
             )"
 
 
@@ -871,7 +871,7 @@ Public Class Form1
             select sum(num_units) as num_units, dd_lastdate, loanid
             from
             (
-            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            select  distinct b.num_units, l.dd_lastdate, l.loanid, h.loan_holdings_id
             from loans l, loan_holdings h, lh_balances b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
@@ -881,15 +881,15 @@ Public Class Form1
 
             union
 
-            select  distinct b.num_units, l.dd_lastdate, l.loanid
+            select  distinct b.num_units, l.dd_lastdate, l.loanid, h.loan_holdings_id
             from loans l, loan_holdings h, lh_balances_suspense b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
             and b.accountid = @accid
             and l.dd_lastdate < @enddate
             and l.dd_lastdate > @startdate       ) v
-            group by  loanid, dd_lastdate
-            order by  dd_lastdate, loanid
+            group by  loanid, loan_holdings_id, dd_lastdate
+            order by  dd_lastdate, loanid, loan_holdings_id
             )"
 
 
