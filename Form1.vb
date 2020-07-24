@@ -102,7 +102,10 @@ Public Class Form1
             Dim iLenderCounter As Integer = dsLenders.Tables(0).Rows.Count
             For i = 0 To iLenderCounter - 1
                 dr1 = dsLenders.Tables(0).Rows(i)
-
+                If Not IsDBNull(dr1("companyname")) Then
+                Else
+                    dr1("companyname") = ""
+                End If
                 Dim xBusinessName As String = Trim(dr1("firstname")) & " " & Trim(dr1("lastname")) & " - " & Trim(dr1("companyname")) & " - " & Trim(dr1("description"))
 
                 lLenderName.Text = xBusinessName
@@ -114,8 +117,11 @@ Public Class Form1
 
         If accfound = 1 Then
             LoanBook(iaccid)
+            'Me.Refresh()
             AmountDeployed(iaccid)
+            'Me.Refresh()
             Maturity(iaccid)
+            'Me.Refresh()
         End If
 
 
@@ -737,7 +743,7 @@ Public Class Form1
         Dim dr1, dr2, dr3 As DataRow
 
 
-        'retrieve all loan holdings for the lender
+        'retrieve all loan holdings for the lender - to current date
         strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
         MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
         MyConn.Open()
@@ -752,7 +758,7 @@ Public Class Form1
             and h.loan_holdings_id = b.lh_id
             and b.accountid = @accid
             and l.loanstatus in (2, 7)
-            
+
 
             union
 
@@ -774,6 +780,23 @@ Public Class Form1
         Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
         Adaptor.Fill(dsMaturity)
         MyConn.Close()
+
+
+        Dim QuaterStartDate = New Date(Now.Year, Now.Month, 1, 0, 0, 0)
+        Select Case QuaterStartDate.Month
+            Case 1, 2, 3
+                QuaterStartDate = New Date(QuaterStartDate.Year, 1, 1, 0, 0, 0)
+            Case 4, 5, 6
+                QuaterStartDate = New Date(QuaterStartDate.Year, 4, 1, 0, 0, 0)
+            Case 7, 8, 9
+                QuaterStartDate = New Date(QuaterStartDate.Year, 7, 1, 0, 0, 0)
+            Case 10, 11, 12
+                QuaterStartDate = New Date(QuaterStartDate.Year, 10, 1, 0, 0, 0)
+        End Select
+
+        Dim QuaterEndDate = QuaterStartDate.AddMonths(3)
+        Dim QuateStartDate = QuaterStartDate.AddDays(-1)
+
 
 
 
@@ -802,20 +825,7 @@ Public Class Form1
         MaturityDate = DateTime.Now
 
 
-        Dim QuaterStartDate = New Date(Now.Year, Now.Month, 1, 0, 0, 0)
-        Select Case QuaterStartDate.Month
-            Case 1, 2, 3
-                QuaterStartDate = New Date(QuaterStartDate.Year, 1, 1, 0, 0, 0)
-            Case 4, 5, 6
-                QuaterStartDate = New Date(QuaterStartDate.Year, 4, 1, 0, 0, 0)
-            Case 7, 8, 9
-                QuaterStartDate = New Date(QuaterStartDate.Year, 7, 1, 0, 0, 0)
-            Case 10, 11, 12
-                QuaterStartDate = New Date(QuaterStartDate.Year, 10, 1, 0, 0, 0)
-        End Select
 
-        QuaterStartDate = QuaterStartDate.AddDays(-1) 'takes it to the last date of the prev month.
-        Dim QuaterEndDate = QuaterStartDate.AddMonths(3)
 
         For i = 0 To 8
             getMaturityData(iaccid, LoanMaturityList, PrevMatured, QuaterStartDate, QuaterEndDate, i)
@@ -853,11 +863,11 @@ Public Class Form1
 
 
         'for the first quarter we only need to get repayments from current date forward - so overwrite the from date
-        If i = 0 Then
-            TempQuaterStartDate = New Date(Now.Year, Now.Month, Now.Day, 0, 0, 0)
-        Else
-            TempQuaterStartDate = QuaterStartDate
-        End If
+        'If i = 0 Then
+        '    TempQuaterStartDate = New Date(Now.Year, Now.Month, Now.Day, 0, 0, 0)
+        'Else
+        TempQuaterStartDate = QuaterStartDate
+        'End If
 
 
 
