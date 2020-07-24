@@ -481,8 +481,12 @@ Public Class Form1
 
 
         Next
-        change = (LastDeployed - FirstDeployed) / FirstDeployed
-        change = Math.Round(change, 2)
+        If FirstDeployed = 0 Then
+            change = 0
+        Else
+            change = (LastDeployed - FirstDeployed) / FirstDeployed
+            change = Math.Round(change, 2)
+        End If
         tbChangeTotl.Text = change
         Dim d = DeployedList2.Count - 1
 
