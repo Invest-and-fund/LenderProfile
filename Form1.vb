@@ -166,6 +166,7 @@ Public Class Form1
         Dim v As Integer = 0
         Dim w As Integer = 0
         Dim x As Integer = 0
+        Dim z As Integer = 0
         Dim iloansetid As Integer = 0
         Dim nloansetid As Integer = 0
         Dim iwrite As Integer = 0
@@ -399,7 +400,18 @@ Public Class Form1
             DrawPieChart(percs, somecolours, PieGraphic, PieLocation, PieSize)
         End Using
 
+        ExtractList = ExtractList.OrderBy(Function(y) y.MonthsToGo).ToList()
 
+        'Now put in the Total Exposure
+        Dim rTEValue As Integer = rtotal
+        For z = 0 To ExtractList.Count - 1
+            Dim tempStruct As Extract
+            tempStruct = ExtractList(z)
+            tempStruct.TotalExposure = rTEValue
+
+            rTEValue = rTEValue - tempStruct.LoanAmount
+            ExtractList(z) = tempStruct
+        Next
 
         DataGridView1.DataSource = ExtractList
         For v = 0 To x - 1
