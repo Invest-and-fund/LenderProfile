@@ -172,13 +172,15 @@ Public Class Form1
         Dim iloanamount As Integer
         Dim dacquireddate As Date = DateTime.Now.AddYears(10)
         Dim dmaturesdate As Date = DateTime.Now.AddYears(10)
-        Dim imonthstogototal As Integer = 0
+        Dim imonthstogototal As Decimal = 0
         Dim iyieldtotal As Decimal = 0
         Dim irecordscount As Integer = 0
 
 
         Dim rtotal As Integer = 0
         Dim rtotal2 As Integer
+        Dim rProduct As Decimal = 0
+        Dim rMProduct As Decimal = 0
 
 
 
@@ -313,25 +315,32 @@ Public Class Form1
                 dmaturesdate = DateTime.Now.AddYears(10) 'set date into furure to enable picking up correct dates
                 newExtract.AcquiredDate = dacquireddate
                 dacquireddate = DateTime.Now.AddYears(10) 'set date into furure to enable picking up correct dates
-                TTF = DateDiff(DateInterval.Month, Date.Now, newExtract.MaturityDate)
+                TTF = DateDiff(DateInterval.Day, Date.Now, newExtract.MaturityDate) / 30
                 newExtract.MonthsToGo = Math.Round(TTF, 2)
 
                 'If newExtract.MonthsToGo < 0 Then
                 'Else
                 newExtract.LoanAmount = iloanamount / 100
-                    rtotal += dloanamount
-                    values_list.Add(dr2("loanamount") / 100)
-                    iloanamount = 0
-                    imonthstogototal += newExtract.MonthsToGo
-                    iyieldtotal += newExtract.Yield
-                    irecordscount += 1
+                rtotal += dloanamount
+                values_list.Add(dr2("loanamount") / 100)
 
 
-                    ExtractList.Add(newExtract)
+                rProduct += (iloanamount * (newExtract.Yield / 10000))
+                rMProduct += (iloanamount * (newExtract.MonthsToGo / 10000))
+
+                iloanamount = 0
+                imonthstogototal += newExtract.MonthsToGo
+                iyieldtotal += newExtract.Yield
+                irecordscount += 1
 
 
-                    v += 1
-                    x += 1
+
+
+                ExtractList.Add(newExtract)
+
+
+                v += 1
+                x += 1
                 'End If
 
             End If
@@ -349,6 +358,11 @@ Public Class Form1
 
 
         tbAmountTot.Text = rtotal
+
+        rProduct = rProduct / rtotal
+        tbTWAR.Text = Math.Round((rProduct * 100), 2)
+        rMProduct = rMProduct / rtotal
+        tbWAM.Text = Math.Round((rMProduct * 100), 2)
 
         'now we know how big to make the arrays we can make them here
         Dim values(values_list.Count) As Integer
