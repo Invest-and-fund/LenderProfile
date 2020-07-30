@@ -319,11 +319,10 @@ Public Class Form1
                 TTF = DateDiff(DateInterval.Day, Date.Now, newExtract.MaturityDate) / 30
                 newExtract.MonthsToGo = Math.Round(TTF, 2)
 
-                'If newExtract.MonthsToGo < 0 Then
-                'Else
+
                 newExtract.LoanAmount = iloanamount / 100
                 rtotal += dloanamount
-                values_list.Add(dr2("loanamount") / 100)
+                'values_list.Add(dr2("loanamount") / 100)
 
 
                 rProduct += (iloanamount * (newExtract.Yield / 10000))
@@ -351,6 +350,20 @@ Public Class Form1
         If rtotal = 0 Then
             Exit Sub
         End If
+
+        ExtractList = ExtractList.OrderBy(Function(y) y.MonthsToGo).ToList()
+
+        'Now put in the Total Exposure
+        Dim rTEValue As Integer = rtotal
+        For z = 0 To ExtractList.Count - 1
+            Dim tempStruct As Extract
+            tempStruct = ExtractList(z)
+            tempStruct.TotalExposure = rTEValue
+
+            rTEValue = rTEValue - tempStruct.LoanAmount
+            ExtractList(z) = tempStruct
+            values_list.Add(tempStruct.LoanAmount)
+        Next
 
         imonthstogototal = Math.Round(imonthstogototal / irecordscount, 2)
         tbMonthsAvg.Text = imonthstogototal
@@ -400,18 +413,7 @@ Public Class Form1
             DrawPieChart(percs, somecolours, PieGraphic, PieLocation, PieSize)
         End Using
 
-        ExtractList = ExtractList.OrderBy(Function(y) y.MonthsToGo).ToList()
 
-        'Now put in the Total Exposure
-        Dim rTEValue As Integer = rtotal
-        For z = 0 To ExtractList.Count - 1
-            Dim tempStruct As Extract
-            tempStruct = ExtractList(z)
-            tempStruct.TotalExposure = rTEValue
-
-            rTEValue = rTEValue - tempStruct.LoanAmount
-            ExtractList(z) = tempStruct
-        Next
 
         DataGridView1.DataSource = ExtractList
         For v = 0 To x - 1
