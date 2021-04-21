@@ -73,9 +73,9 @@ Public Class Form1
 
     Private Sub btnGo_Click(sender As Object, e As EventArgs) Handles btnGo.Click
         Dim MySQL, strConn, sHTML, bHTML, sUsers As String
-        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
-        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
-        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
+        'Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
+        'Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
+        'Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
         Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
         Dim iaccid As Integer
@@ -87,32 +87,53 @@ Public Class Form1
 
         If iaccid > 0 Then
             'get the account details
-            strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
-            MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
-            MyConn.Open()
             MySQL = "select u.userid, u.firstname, u.lastname, a.companyname, a.accounttype, t.description
                      from users u, accounts a, account_types t
                      where u.userid = a.userid
                        and a.accounttype = t.account_type_id
-                       and a.accountid = " & iaccid
-            dsLenders = New DataSet
-            Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-            Adaptor.Fill(dsLenders)
-            MyConn.Close()
-            Dim iLenderCounter As Integer = dsLenders.Tables(0).Rows.Count
-            For i = 0 To iLenderCounter - 1
-                dr1 = dsLenders.Tables(0).Rows(i)
-                If Not IsDBNull(dr1("companyname")) Then
-                Else
-                    dr1("companyname") = ""
-                End If
-                Dim xBusinessName As String = Trim(dr1("firstname")) & " " & Trim(dr1("lastname")) & " - " & Trim(dr1("companyname")) & " - " & Trim(dr1("description"))
+                       and a.accountid = @p1"
+            Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+                Try
+                    Dim adapter As SqlDataAdapter = New SqlDataAdapter()
 
-                lLenderName.Text = xBusinessName
 
-                accfound = 1
+                    Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                    con.Open()
+                    cmd.Parameters.Clear()
+                    With cmd.Parameters
+                        .Add(New SqlParameter("@p1", iaccid))
 
-            Next
+                    End With
+                    adapter.SelectCommand = cmd
+
+                    Dim dsLenders = New DataSet
+                    adapter.Fill(dsLenders)
+
+                    Dim iLenderCounter As Integer = dsLenders.Tables(0).Rows.Count
+                    For i = 0 To iLenderCounter - 1
+                        dr1 = dsLenders.Tables(0).Rows(i)
+                        If Not IsDBNull(dr1("companyname")) Then
+                        Else
+                            dr1("companyname") = ""
+                        End If
+                        Dim xBusinessName As String = Trim(dr1("firstname")) & " " & Trim(dr1("lastname")) & " - " & Trim(dr1("companyname")) & " - " & Trim(dr1("description"))
+
+                        lLenderName.Text = xBusinessName
+
+                        accfound = 1
+
+                    Next
+
+                Catch ex As Exception
+
+                Finally
+                    con.Close()
+                    con.Dispose()
+                End Try
+            End Using
+
+
+
         End If
 
         If accfound = 1 Then
@@ -131,9 +152,9 @@ Public Class Form1
 
     Public Sub LoanBook(iaccid As Integer)
         Dim MySQL, strConn, sHTML, bHTML, sUsers As String
-        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
-        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
-        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
+        'Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
+        'Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
+        'Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
         Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
         Dim dToday = New DateTime(Now.Year - 1, Now.Month, Now.Day, 0, 0, 0)
@@ -186,9 +207,7 @@ Public Class Form1
 
 
         'retrieve all loan holdings for the lender
-        strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
-        MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
-        MyConn.Open()
+
         MySQL = "select loanid,  businessname ,amount as loanamount, dd_lastdate as maturitydate, fixed_rate as yield,
                  dd_date as dateenteredinto, loansetid, loan_holdings_id
             from
@@ -203,8 +222,8 @@ Public Class Form1
             and b.lh_id = h.loan_holdings_id
             and b.accountid = a.accountid
             and l.loanstatus in (2, 7)
-            and a.accountid = " & iaccid &
-            "  group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid , amount, h.loan_holdings_id
+            and a.accountid = @p1 
+            group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid , b.num_units, h.loan_holdings_id
               union all
             select distinct l.loanid, l.business_name as businessname , b.num_units as amount, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid, h.loan_holdings_id
             from loans l, accounts a, users u , orders o,  loan_holdings h, lh_balances_suspense b
@@ -216,19 +235,38 @@ Public Class Form1
             and b.lh_id = h.loan_holdings_id
             and b.accountid = a.accountid
             and l.loanstatus in (2, 7)
-            and a.accountid = " & iaccid &
-            "   group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid   , amount, h.loan_holdings_id
+            and a.accountid = @p1 
+            group by l.loanid, l.business_name, l.dd_lastdate, l.fixed_rate, l.dd_date, l.loansetid   , b.num_units, h.loan_holdings_id
             ) results
              order by
             loansetid, dateenteredinto, maturitydate, loanid,  loan_holdings_id,
             businessname,
             yield"
+        Dim dsLoans = New DataSet
+        Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+            Try
+                Dim adapter As SqlDataAdapter = New SqlDataAdapter()
 
 
-        dsLoans = New DataSet
-        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-        Adaptor.Fill(dsLoans)
-        MyConn.Close()
+                Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                con.Open()
+                cmd.Parameters.Clear()
+                With cmd.Parameters
+                    .Add(New SqlParameter("@p1", iaccid))
+                End With
+                adapter.SelectCommand = cmd
+
+
+                adapter.Fill(dsLoans)
+
+            Catch ex As Exception
+
+            Finally
+                con.Close()
+                con.Dispose()
+            End Try
+        End Using
+
         Dim ExtractList As New List(Of Extract)
         Dim iLoanCounter As Integer = dsLoans.Tables(0).Rows.Count
         For i = 0 To iLoanCounter - 1
@@ -249,37 +287,57 @@ Public Class Form1
                 iLoansetid = 0
             End If
 
-            MyConn.Open()
-            MySQL = "select first 1 b.datecreated
+
+            MySQL = "select top 1 b.datecreated
             from lh_bals b, loans l, loan_holdings h
-            where l.loanid = " & newExtract.LoanID &
-           "  and b.accountid = " & iaccid &
-           "  and b.lh_id = h.loan_holdings_id
+            where l.loanid =  @p1 
+             and b.accountid =  @p2  
+             and b.lh_id = h.loan_holdings_id
               and h.loanid = l.loanid"
-            dsBals = New DataSet
-            Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-            Adaptor.Fill(dsBals)
-            MyConn.Close()
+            Dim dsBals = New DataSet
+            Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+                Try
+                    Dim adapter As SqlDataAdapter = New SqlDataAdapter()
+
+
+                    Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                    con.Open()
+                    cmd.Parameters.Clear()
+                    With cmd.Parameters
+                        .Add(New SqlParameter("@p1", newExtract.LoanID))
+                        .Add(New SqlParameter("@p2", iaccid))
+                    End With
+                    adapter.SelectCommand = cmd
+
+
+                    adapter.Fill(dsBals)
+
+                Catch ex As Exception
+
+                Finally
+                    con.Close()
+                    con.Dispose()
+                End Try
+            End Using
+
             newExtract.AcquiredDate = dsBals.Tables(0).Rows(0)("datecreated")
 
-
-
-
             iwrite = 0 ' set to write record unless find otherwise 
-            If i < iLoanCounter - 1 Then
+            If i = iLoanCounter - 1 Then
+            Else
+
                 dr3 = dsLoans.Tables(0).Rows(i + 1)
                 If Not IsDBNull(dr3("LoanSetID")) Then
                     nloansetid = dr3("LoanSetID")
                 Else
                     nloansetid = 0
                 End If
-                If iloansetid = nLoansetid And nLoansetid <> 0 Then
+                If iloansetid = nloansetid And nloansetid <> 0 Then
                     'dont write this record -  just accumulate values
                     iwrite = 1
 
                 End If
             End If
-
 
             iloanamount += dr2("loanamount")
             If dacquireddate > dr2("dateenteredinto") Then
@@ -289,25 +347,39 @@ Public Class Form1
                 dmaturesdate = dr2("maturitydate")
             End If
 
-
-
-
             Dim TTF As New Decimal
-
-
-
 
             Dim dloanamount As Integer = iloanamount / 100
 
             If dloanamount > 0 And iwrite = 0 Then
 
                 If iloansetid > 0 Then
-                    MyConn.Open()
-                    MySQL = "select business_name from loan_sets where loansetid = " & nloansetid
-                    dsLoansets = New DataSet
-                    Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-                    Adaptor.Fill(dsLoansets)
-                    MyConn.Close()
+                    MySQL = "select business_name from loan_sets where loansetid = @p1"
+                    Dim dsLoansets = New DataSet
+                    Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+                        Try
+                            Dim adapter As SqlDataAdapter = New SqlDataAdapter()
+
+
+                            Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                            con.Open()
+                            cmd.Parameters.Clear()
+                            With cmd.Parameters
+                                .Add(New SqlParameter("@p1", iloansetid))
+                            End With
+                            adapter.SelectCommand = cmd
+
+
+                            adapter.Fill(dsLoansets)
+
+                        Catch ex As Exception
+
+                        Finally
+                            con.Close()
+                            con.Dispose()
+                        End Try
+                    End Using
+
                     newExtract.LoanName = dsLoansets.Tables(0).Rows(0)("business_name")
                 End If
 
@@ -406,9 +478,9 @@ Public Class Form1
 
         Using PieGraphic = Me.CreateGraphics()
             'Set location of pie chart...
-            Dim PieLocation As New Point(1000, 60)
+            Dim PieLocation As New Point(960, 60)
             'Set size of pie chart...
-            Dim PieSize As New Size(250, 250)
+            Dim PieSize As New Size(280, 280)
             'Call function which create a pie chart of given data...
             DrawPieChart(percs, somecolours, PieGraphic, PieLocation, PieSize)
         End Using
@@ -428,9 +500,9 @@ Public Class Form1
         DataGridView1.Columns.Item(0).Width = 55
         DataGridView1.Columns.Item(1).Width = 250
         DataGridView1.Columns.Item(2).Width = 100
-        DataGridView1.Columns.Item(3).Width = 115
+        DataGridView1.Columns.Item(3).Width = 100
         DataGridView1.Columns.Item(3).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
-        DataGridView1.Columns.Item(4).Width = 115
+        DataGridView1.Columns.Item(4).Width = 100
         DataGridView1.Columns.Item(4).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
         DataGridView1.Columns.Item(5).Width = 50
         DataGridView1.Columns.Item(5).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
@@ -591,10 +663,10 @@ Public Class Form1
                                ByRef FirstDeployed As Integer, ByRef LastDeployed As Integer)
 
         Dim MySQL, strConn, sHTML, bHTML, sUsers As String
-        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
-        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
-        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
-        Dim connection As String = "FBConnectionString"
+        'Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
+        'Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
+        'Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
+        'Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
 
         'Dim DeployedList As New List(Of Deployed)
@@ -605,9 +677,6 @@ Public Class Form1
 
 
         'retrieve all loan holdings for the lender
-        strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
-        MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
-        MyConn.Open()
         MySQL = "select sum(f.balance) as theamount
                 from (
                  Select            fb.num_units  as balance
@@ -622,7 +691,7 @@ Public Class Form1
                       and s.lh_id = h.loan_holdings_id
                       and h.loanid = l.loanid
                       and l.loanstatus in (2, 7)
-                       and s.datecreated < @DeployedDate 
+                       and s.datecreated < @p1 
                    group by s.accountid, s.lh_id
                     ) vt
                 inner join lh_bals t on t.lh_bals_id = vt.max_lh_bals_id
@@ -630,7 +699,7 @@ Public Class Form1
 
                 fb on fb.accountid = a.accountid
                  where fb.accountid = a.accountid
-                   and a.accountid = @accid 
+                   and a.accountid = @p2 
               union all
                  Select            fb.num_units  as balance
                    From select_active_accounts a  
@@ -644,22 +713,39 @@ Public Class Form1
                       and s.lh_id = h.loan_holdings_id
                       and h.loanid = l.loanid
                       and l.loanstatus in (2, 7)
-                       and s.datecreated < @DeployedDate 
+                       and s.datecreated < @p1 
                    group by s.accountid, s.lh_id
                     ) vt
                 inner join lh_bals_suspense t on t.lh_bals_suspense_id = vt.max_lh_bals_sus_id
                  where t.num_units > 0 )   fb on fb.accountid = a.accountid
                  where fb.accountid = a.accountid
-                   and a.accountid = @accid
+                   and a.accountid = @p2
                    ) f"
+        Dim dsDeployed = New DataSet
+        Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+            Try
+                Dim adapter As SqlDataAdapter = New SqlDataAdapter()
 
 
-        dsDeployed = New DataSet
-        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-        Adaptor.SelectCommand.Parameters.Add("@DeployedDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = DeployedDate
-        Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
-        Adaptor.Fill(dsDeployed)
-        MyConn.Close()
+                Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                con.Open()
+                cmd.Parameters.Clear()
+                With cmd.Parameters
+                    .Add(New SqlParameter("@p1", DeployedDate))
+                    .Add(New SqlParameter("@p2", iaccid))
+                End With
+                adapter.SelectCommand = cmd
+
+
+                adapter.Fill(dsDeployed)
+
+            Catch ex As Exception
+
+            Finally
+                con.Close()
+                con.Dispose()
+            End Try
+        End Using
 
         Dim newDeployed As New Deployed
         Dim newDeployed2 As New Deployed2
@@ -701,7 +787,6 @@ Public Class Form1
 
         'now get the account balance for that date
 
-        MyConn.Open()
         MySQL = "select sum(f.balance) as theamount
                 from (
                  Select            fb.amount  as balance
@@ -714,13 +799,13 @@ Public Class Form1
         select accountid, max(fin_balid) as max_fin_balid
         from fin_bals s
 
-        where s.datecreated < @DeployedDate
+        where s.datecreated < @p1
      group by accountid
         ) vt
         inner join fin_bals t on t.fin_balid = vt.max_fin_balid
         where t.amount > 0 ) fb on fb.accountid = a.accountid
                  where fb.accountid = a.accountid
-                   and a.accountid = @accid 
+                   and a.accountid = @p2 
                union all
                  Select            fb.amount as balance
                    From select_active_accounts a  
@@ -732,21 +817,38 @@ Public Class Form1
         select accountid, max(fin_bals_suspenseid) as max_fin_bals_suspenseid
         from fin_bals_suspense s
 
-        where s.datecreated < @DeployedDate 
+        where s.datecreated < @p1 
         group by accountid
         ) vt
         inner join fin_bals_suspense t on t.fin_bals_suspenseid = vt.max_fin_bals_suspenseid
         where t.amount > 0 )   fb on fb.accountid = a.accountid
                  where fb.accountid = a.accountid
-                   and a.accountid = @accid  ) f"
+                   and a.accountid = @p2  ) f"
+        Dim dsBalance = New DataSet
+        Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+            Try
+                Dim adapter As SqlDataAdapter = New SqlDataAdapter()
 
 
-        dsBalance = New DataSet
-        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-        Adaptor.SelectCommand.Parameters.Add("@DeployedDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = DeployedDate
-        Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
-        Adaptor.Fill(dsBalance)
-        MyConn.Close()
+                Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                con.Open()
+                cmd.Parameters.Clear()
+                With cmd.Parameters
+                    .Add(New SqlParameter("@p1", DeployedDate))
+                    .Add(New SqlParameter("@p2", iaccid))
+                End With
+                adapter.SelectCommand = cmd
+
+
+                adapter.Fill(dsBalance)
+
+            Catch ex As Exception
+
+            Finally
+                con.Close()
+                con.Dispose()
+            End Try
+        End Using
 
         dr2 = dsBalance.Tables(0).Rows(0)
         If Not IsDBNull(dr2("TheAmount")) Then
@@ -768,18 +870,14 @@ Public Class Form1
     Public Sub Maturity(iaccid As Integer)
         'get loan holding position prior to iteration of future maturity
         Dim MySQL, strConn As String
-        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
-        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
-        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
+
         Dim connection As String = "FBConnectionString"
         Dim dr1, dr2, dr3 As DataRow
 
 
         'retrieve all loan holdings for the lender - to current date
-        strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
-        MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
-        MyConn.Open()
-        MySQL = "select  sum (num_units) as TheAmount  from
+
+        MySQL = "select  sum (w.num_units) as TheAmount  from
             (
             select sum(num_units) as num_units, dd_lastdate, loanid, loan_holdings_id
             from
@@ -788,7 +886,7 @@ Public Class Form1
             from loans l, loan_holdings h, lh_balances b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
-            and b.accountid = @accid
+            and b.accountid = @p1
             and l.loanstatus in (2, 7)
 
 
@@ -798,21 +896,35 @@ Public Class Form1
             from loans l, loan_holdings h, lh_balances_suspense b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
-            and b.accountid = @accid
+            and b.accountid = @p1
             and l.loanstatus in (2, 7)
                   ) v
-            group by  loanid, loan_holdings_id, dd_lastdate
-            order by  dd_lastdate, loanid, loan_holdings_id
-            )"
+            group by  loanid, loan_holdings_id, dd_lastdate ) w"
+
+        Dim dsMaturity = New DataSet
+        Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+            Try
+                Dim adapter As SqlDataAdapter = New SqlDataAdapter()
 
 
-        dsMaturity = New DataSet
-        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
+                Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                con.Open()
+                cmd.Parameters.Clear()
+                With cmd.Parameters
+                    .Add(New SqlParameter("@p1", iaccid))
+                End With
+                adapter.SelectCommand = cmd
 
-        Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
-        Adaptor.Fill(dsMaturity)
-        MyConn.Close()
 
+                adapter.Fill(dsMaturity)
+
+            Catch ex As Exception
+
+            Finally
+                con.Close()
+                con.Dispose()
+            End Try
+        End Using
 
         Dim QuaterStartDate = New Date(Now.Year, Now.Month, 1, 0, 0, 0)
         Select Case QuaterStartDate.Month
@@ -886,10 +998,7 @@ Public Class Form1
     Public Sub getMaturityData(iaccid As Integer, ByRef LoanMaturityList As List(Of LoanMaturity), ByRef PrevMatured As Integer, ByRef QuaterStartDate As Date, ByRef QuaterEndDate As Date, ByRef i As Integer)
 
         Dim MySQL, strConn As String
-        Dim MyConn As FirebirdSql.Data.FirebirdClient.FbConnection
-        Dim Cmd As FirebirdSql.Data.FirebirdClient.FbCommand
-        Dim Adaptor As FirebirdSql.Data.FirebirdClient.FbDataAdapter
-        Dim connection As String = "FBConnectionString"
+
         Dim dr1, dr2, dr3 As DataRow
         Dim TempQuaterStartDate = New Date
 
@@ -905,10 +1014,8 @@ Public Class Form1
 
 
         'retrieve all loan holdings for the lender
-        strConn = ConfigurationManager.ConnectionStrings(connection).ConnectionString
-        MyConn = New FirebirdSql.Data.FirebirdClient.FbConnection(strConn)
-        MyConn.Open()
-        MySQL = "select  sum (num_units) as TheAmount  from
+
+        MySQL = "select  sum (w.num_units) as TheAmount  from
             (
             select sum(num_units) as num_units, dd_lastdate, loanid
             from
@@ -917,9 +1024,9 @@ Public Class Form1
             from loans l, loan_holdings h, lh_balances b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
-            and b.accountid = @accid
-            and l.dd_lastdate < @enddate
-            and l.dd_lastdate > @startdate 
+            and b.accountid = @p3
+            and l.dd_lastdate < @p2
+            and l.dd_lastdate > @p1 
 
             union
 
@@ -927,27 +1034,40 @@ Public Class Form1
             from loans l, loan_holdings h, lh_balances_suspense b
             where l.loanid = h.loanid
             and h.loan_holdings_id = b.lh_id
-            and b.accountid = @accid
-            and l.dd_lastdate < @enddate
-            and l.dd_lastdate > @startdate       ) v
-            group by  loanid, loan_holdings_id, dd_lastdate
-            order by  dd_lastdate, loanid, loan_holdings_id
-            )"
+            and b.accountid = @p3
+            and l.dd_lastdate < @p2
+            and l.dd_lastdate > @p1       ) v
+            group by  loanid, loan_holdings_id, dd_lastdate ) w"
+
+        Dim dsMaturity = New DataSet
+        Using con As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("SQLConnectionString").ConnectionString)
+            Try
+                Dim adapter As SqlDataAdapter = New SqlDataAdapter()
 
 
-        dsMaturity = New DataSet
-        Adaptor = New FirebirdSql.Data.FirebirdClient.FbDataAdapter(MySQL, MyConn)
-        Adaptor.SelectCommand.Parameters.Add("@StartDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = TempQuaterStartDate
-        Adaptor.SelectCommand.Parameters.Add("EndDate", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = QuaterEndDate
-        Adaptor.SelectCommand.Parameters.Add("@accid", FirebirdSql.Data.FirebirdClient.FbDbType.TimeStamp).Value = iaccid
-        Adaptor.Fill(dsMaturity)
-        MyConn.Close()
+                Dim cmd As SqlCommand = New SqlCommand(MySQL, con)
+                con.Open()
+                cmd.Parameters.Clear()
+                With cmd.Parameters
+                    .Add(New SqlParameter("@p1", TempQuaterStartDate))
+                    .Add(New SqlParameter("@p2", QuaterEndDate))
+                    .Add(New SqlParameter("@p3", iaccid))
+
+                End With
+                adapter.SelectCommand = cmd
 
 
+                adapter.Fill(dsMaturity)
+
+            Catch ex As Exception
+
+            Finally
+                con.Close()
+                con.Dispose()
+            End Try
+        End Using
 
         Dim newLoanMaturity As New LoanMaturity
-
-
 
         dr2 = dsMaturity.Tables(0).Rows(0)
         If Not IsDBNull(dr2("TheAmount")) Then

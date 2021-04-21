@@ -22,14 +22,14 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Dim ChartArea1 As System.Windows.Forms.DataVisualization.Charting.ChartArea = New System.Windows.Forms.DataVisualization.Charting.ChartArea()
-        Dim Legend1 As System.Windows.Forms.DataVisualization.Charting.Legend = New System.Windows.Forms.DataVisualization.Charting.Legend()
-        Dim Series1 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
-        Dim Series2 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
-        Dim ChartArea2 As System.Windows.Forms.DataVisualization.Charting.ChartArea = New System.Windows.Forms.DataVisualization.Charting.ChartArea()
-        Dim Legend2 As System.Windows.Forms.DataVisualization.Charting.Legend = New System.Windows.Forms.DataVisualization.Charting.Legend()
-        Dim Series3 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
-        Dim Series4 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
+        Dim ChartArea5 As System.Windows.Forms.DataVisualization.Charting.ChartArea = New System.Windows.Forms.DataVisualization.Charting.ChartArea()
+        Dim Legend5 As System.Windows.Forms.DataVisualization.Charting.Legend = New System.Windows.Forms.DataVisualization.Charting.Legend()
+        Dim Series9 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
+        Dim Series10 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
+        Dim ChartArea6 As System.Windows.Forms.DataVisualization.Charting.ChartArea = New System.Windows.Forms.DataVisualization.Charting.ChartArea()
+        Dim Legend6 As System.Windows.Forms.DataVisualization.Charting.Legend = New System.Windows.Forms.DataVisualization.Charting.Legend()
+        Dim Series11 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
+        Dim Series12 As System.Windows.Forms.DataVisualization.Charting.Series = New System.Windows.Forms.DataVisualization.Charting.Series()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.tbACCID = New System.Windows.Forms.TextBox()
         Me.lLenderName = New System.Windows.Forms.Label()
@@ -89,7 +89,7 @@ Partial Class Form1
         Me.DataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.DataGridView1.Location = New System.Drawing.Point(16, 71)
         Me.DataGridView1.Name = "DataGridView1"
-        Me.DataGridView1.Size = New System.Drawing.Size(943, 265)
+        Me.DataGridView1.Size = New System.Drawing.Size(915, 265)
         Me.DataGridView1.TabIndex = 3
         '
         'Label3
@@ -137,7 +137,7 @@ Partial Class Form1
         '
         'btnGo
         '
-        Me.btnGo.Location = New System.Drawing.Point(884, 7)
+        Me.btnGo.Location = New System.Drawing.Point(848, 7)
         Me.btnGo.Name = "btnGo"
         Me.btnGo.Size = New System.Drawing.Size(75, 23)
         Me.btnGo.TabIndex = 9
@@ -146,50 +146,50 @@ Partial Class Form1
         '
         'Chart1
         '
-        ChartArea1.Name = "ChartArea1"
-        Me.Chart1.ChartAreas.Add(ChartArea1)
-        Legend1.Name = "Legend1"
-        Legend1.Title = "Deployment History"
-        Me.Chart1.Legends.Add(Legend1)
+        ChartArea5.Name = "ChartArea1"
+        Me.Chart1.ChartAreas.Add(ChartArea5)
+        Legend5.Name = "Legend1"
+        Legend5.Title = "Deployment History"
+        Me.Chart1.Legends.Add(Legend5)
         Me.Chart1.Location = New System.Drawing.Point(523, 383)
         Me.Chart1.Name = "Chart1"
-        Series1.ChartArea = "ChartArea1"
-        Series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
-        Series1.Color = System.Drawing.Color.Blue
-        Series1.Legend = "Legend1"
-        Series1.Name = "Amount Lent"
-        Series2.ChartArea = "ChartArea1"
-        Series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
-        Series2.Color = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(0, Byte), Integer))
-        Series2.Legend = "Legend1"
-        Series2.Name = "Total Account Value"
-        Me.Chart1.Series.Add(Series1)
-        Me.Chart1.Series.Add(Series2)
+        Series9.ChartArea = "ChartArea1"
+        Series9.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
+        Series9.Color = System.Drawing.Color.Blue
+        Series9.Legend = "Legend1"
+        Series9.Name = "Amount Lent"
+        Series10.ChartArea = "ChartArea1"
+        Series10.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
+        Series10.Color = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(0, Byte), Integer))
+        Series10.Legend = "Legend1"
+        Series10.Name = "Total Account Value"
+        Me.Chart1.Series.Add(Series9)
+        Me.Chart1.Series.Add(Series10)
         Me.Chart1.Size = New System.Drawing.Size(735, 319)
         Me.Chart1.TabIndex = 10
         Me.Chart1.Text = "Chart1"
         '
         'Chart2
         '
-        ChartArea2.Name = "ChartArea1"
-        Me.Chart2.ChartAreas.Add(ChartArea2)
-        Legend2.Name = "Legend1"
-        Legend2.Title = "Loan Maturity Profile"
-        Me.Chart2.Legends.Add(Legend2)
+        ChartArea6.Name = "ChartArea1"
+        Me.Chart2.ChartAreas.Add(ChartArea6)
+        Legend6.Name = "Legend1"
+        Legend6.Title = "Loan Maturity Profile"
+        Me.Chart2.Legends.Add(Legend6)
         Me.Chart2.Location = New System.Drawing.Point(523, 705)
         Me.Chart2.Name = "Chart2"
-        Series3.ChartArea = "ChartArea1"
-        Series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
-        Series3.Color = System.Drawing.Color.Blue
-        Series3.Legend = "Legend1"
-        Series3.Name = "Total Lent"
-        Series4.ChartArea = "ChartArea1"
-        Series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
-        Series4.Color = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(0, Byte), Integer))
-        Series4.Legend = "Legend1"
-        Series4.Name = "End Date by Qtr"
-        Me.Chart2.Series.Add(Series3)
-        Me.Chart2.Series.Add(Series4)
+        Series11.ChartArea = "ChartArea1"
+        Series11.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
+        Series11.Color = System.Drawing.Color.Blue
+        Series11.Legend = "Legend1"
+        Series11.Name = "Total Lent"
+        Series12.ChartArea = "ChartArea1"
+        Series12.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line
+        Series12.Color = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(64, Byte), Integer), CType(CType(0, Byte), Integer))
+        Series12.Legend = "Legend1"
+        Series12.Name = "End Date by Qtr"
+        Me.Chart2.Series.Add(Series11)
+        Me.Chart2.Series.Add(Series12)
         Me.Chart2.Size = New System.Drawing.Size(735, 300)
         Me.Chart2.TabIndex = 11
         Me.Chart2.Text = "Chart2"
@@ -230,25 +230,25 @@ Partial Class Form1
         '
         'tbAmountTot
         '
-        Me.tbAmountTot.Location = New System.Drawing.Point(593, 336)
+        Me.tbAmountTot.Location = New System.Drawing.Point(560, 336)
         Me.tbAmountTot.Name = "tbAmountTot"
-        Me.tbAmountTot.Size = New System.Drawing.Size(100, 20)
+        Me.tbAmountTot.Size = New System.Drawing.Size(98, 20)
         Me.tbAmountTot.TabIndex = 16
         Me.tbAmountTot.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
         'tbYieldAvg
         '
-        Me.tbYieldAvg.Location = New System.Drawing.Point(699, 336)
+        Me.tbYieldAvg.Location = New System.Drawing.Point(655, 336)
         Me.tbYieldAvg.Name = "tbYieldAvg"
-        Me.tbYieldAvg.Size = New System.Drawing.Size(42, 20)
+        Me.tbYieldAvg.Size = New System.Drawing.Size(60, 20)
         Me.tbYieldAvg.TabIndex = 17
         Me.tbYieldAvg.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
         'tbMonthsAvg
         '
-        Me.tbMonthsAvg.Location = New System.Drawing.Point(747, 336)
+        Me.tbMonthsAvg.Location = New System.Drawing.Point(712, 336)
         Me.tbMonthsAvg.Name = "tbMonthsAvg"
-        Me.tbMonthsAvg.Size = New System.Drawing.Size(77, 20)
+        Me.tbMonthsAvg.Size = New System.Drawing.Size(79, 20)
         Me.tbMonthsAvg.TabIndex = 18
         Me.tbMonthsAvg.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
